@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy Birthday Tapu Bhai!</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Pacifico&display=swap');
+
+        /* RESET & CORE LAYOUT */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            font-family: 'Fredoka One', cursive;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+
+        /* THE CANVAS (CONFETTI LAYER) */
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* CONTAINER */
+        .container {
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* THE GIFT BOX (STARTING STATE) */
+        .gift-box {
+            font-size: 100px;
+            cursor: pointer;
+            transition: transform 0.3s;
+            animation: bounce 2s infinite;
+            display: block;
+            user-select: none;
+        }
+
+        .gift-box:hover {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .click-hint {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            opacity: 0.8;
+            animation: pulse 1.5s infinite;
+        }
+
+        /* THE SURPRISE CONTENT (HIDDEN INITIALLY) */
+        .surprise-content {
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            align-items: center;
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.5s ease-out;
+        }
+
+        .show-surprise {
+            display: flex !important;
+            animation: popIn 0.8s forwards;
+        }
+
+        h1 {
+            font-family: 'Pacifico', cursive;
+            font-size: 3.5rem; /* Adjusted slightly for mobile fitting */
+            color: #ff6b6b;
+            text-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+            margin-bottom: 10px;
+            line-height: 1.2;
+        }
+
+        p {
+            font-size: 1.5rem;
+            max-width: 600px;
+            line-height: 1.5;
+            color: #feca57;
+        }
+
+        /* BALLOONS DECORATION */
+        .balloon {
+            position: absolute;
+            bottom: -100px;
+            width: 50px;
+            height: 70px;
+            border-radius: 50%;
+            opacity: 0.9;
+            animation: floatUp 4s ease-in forwards;
+        }
+
+        .balloon::before {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 24px;
+            width: 2px;
+            height: 40px;
+            background: rgba(255,255,255,0.5);
+        }
+
+        /* ANIMATIONS */
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0); }
+            80% { transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes floatUp {
+            0% { bottom: -100px; transform: translateX(0); }
+            50% { transform: translateX(20px); }
+            100% { bottom: 120vh; transform: translateX(-20px); }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="confettiCanvas"></canvas>
+
+    <div class="container">
+        <div id="start-screen">
+            <div class="gift-box" onclick="openGift()">🎁</div>
+            <div class="click-hint">For Tapu Bhai (Click to Open)</div>
+        </div>
+
+        <div id="celebration" class="surprise-content">
+            <h1>Happy Birthday<br>Tapu Bhai! 🥳</h1>
+            <p id="message">Wishing you an awesome year ahead full of success and happiness!</p>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFETTI ENGINE ---
+        const canvas = document.getElementById('confettiCanvas');
+        const ctx = canvas.getContext('2d');
+        let width = window.innerWidth;
+        let height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+
+        const particles = [];
+        const colors = ['#ff6b6b', '#feca57', '#1dd1a1', '#5f27cd', '#54a0ff'];
+
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = Math.random() * 10 + 5;
+                this.weight = Math.random() * 5 + 2; 
+                this.directionX = Math.random() * 6 - 3; 
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+                this.rotation = 0;
+                this.rotationSpeed = Math.random() * 0.2 - 0.1;
+            }
+
+            update() {
+                this.y += this.weight;
+                this.x += this.directionX;
+                this.rotation += this.rotationSpeed;
+                if (this.size > 0.1) this.size -= 0.05; 
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                ctx.fillStyle = this.color;
+                ctx.fillRect(-this.size/2, -this.size/2, this.size, this.size);
+                ctx.restore();
+            }
+        }
+
+        function createConfetti() {
+            // Burst from center
+            for (let i = 0; i < 150; i++) {
+                particles.push(new Particle(width / 2, height / 2));
+            }
+            // Continuous rain
+            setInterval(() => {
+                if (particles.length < 300) {
+                    particles.push(new Particle(Math.random() * width, -20));
+                }
+            }, 50);
+        }
+
+        function animateConfetti() {
+            ctx.clearRect(0, 0, width, height);
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+
+                if (particles[i].size <= 1 || particles[i].y > height) {
+                    particles.splice(i, 1);
+                    i--;
+                }
+            }
+            requestAnimationFrame(animateConfetti);
+        }
+
+        // --- BALLOON LOGIC ---
+        function releaseBalloons() {
+            const colors = ['#ff6b6b', '#feca57', '#1dd1a1', '#54a0ff'];
+            for(let i=0; i<20; i++) {
+                const balloon = document.createElement('div');
+                balloon.classList.add('balloon');
+                balloon.style.left = Math.random() * 100 + 'vw';
+                balloon.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                balloon.style.animationDuration = (Math.random() * 2 + 3) + 's';
+                document.body.appendChild(balloon);
+                
+                setTimeout(() => {
+                    balloon.remove();
+                }, 5000);
+            }
+        }
+
+        // --- MAIN INTERACTION ---
+        function openGift() {
+            document.getElementById('start-screen').style.display = 'none';
+            const celebration = document.getElementById('celebration');
+            celebration.classList.add('show-surprise');
+            createConfetti();
+            animateConfetti();
+            releaseBalloons();
+        }
+
+        window.addEventListener('resize', () => {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+        });
+    </script>
+</body>
+</html>
