@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe Online (No Setup)</title>
+    <style>
+        :root { --bg: #f8f9fa; --primary: #007bff; --secondary: #28a745; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); text-align: center; margin: 0; padding: 20px; }
+        .card { background: white; max-width: 400px; margin: auto; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px auto; max-width: 300px; }
+        .cell { aspect-ratio: 1/1; background: #eee; border-radius: 10px; font-size: 2.5rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; font-weight: bold; }
+        .cell:hover { background: #e2e2e2; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; margin-bottom: 10px; font-weight: bold; transition: 0.3s; }
+        .btn-blue { background: var(--primary); color: white; }
+        .btn-green { background: var(--secondary); color: white; }
+        input { width: 90%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; text-align: center; font-size: 1rem; }
+        #status { font-size: 1.2rem; margin: 15px 0; color: #333; height: 30px; }
+        .info { color: #666; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>❌ Tic-Tac-Toe ⭕</h2>
+    
+    <div id="setup">
+        <button class="btn btn-blue" onclick="startNewGame()">Create Private Room</button>
+        <p>OR</p>
+        <input type="text" id="joinCode" placeholder="Enter 4-Digit Code">
+        <button class="btn btn-green" onclick="joinExistingGame()">Join Game</button>
+    </div>
+
+    <div id="game" style="display:none;">
+        <div id="status">Waiting for move...</div>
+        <div class="grid" id="board">
+            <div class="cell" onclick="cellClick(0)"></div>
+            <div class="cell" onclick="cellClick(1)"></div>
+            <div class="cell" onclick="cellClick(2)"></div>
+            <div class="cell" onclick="cellClick(3)"></div>
+            <div class="cell" onclick="cellClick(4)"></div>
+            <div class="cell" onclick="cellClick(5)"></div>
+            <div class="cell" onclick="cellClick(6)"></div>
+            <div class="cell" onclick="cellClick(7)"></div>
+            <div class="cell" onclick="cellClick(8)"></div>
+        </div>
+        <p class="info">Room: <b id="roomLabel"></b> | You: <b id="symbolLabel"></b></p>
+    </div>
+</div>
+
+<script>
+// Is logic ke liye hum GunDB (decentralized relay) use kar rahe hain
+// Isme aapko koi API key ya setup nahi chahiye, ye automatically sync hoga.
+const script = document.createElement('script');
+script.src = "https://cdn.jsdelivr.net/npm/gun/gun.js";
+document.head.appendChild(script);
+
+let gun, room, mySymbol, currentTurn, board = Array(9).fill("");
+
+function startNewGame() {
+    let code = Math.floor(1000 + Math.random() * 9000).toString();
+    mySymbol = 'X';
+    init(code);
+}
+
+function joinExistingGame() {
+    let code = document.getElementById('joinCode').value;
+    if(code.length < 4) return alert("Enter valid 4-digit code");
+    mySymbol = 'O';
+    init(code);
+}
+
+function init(code) {
+    gun = Gun(['https://gun-manhattan.herokuapp.com/gun']); // Public relay
+    room = gun.get('ttt-game-room-' + code);
+    
+    document.getElementById('setup').style.display = 'none';
+    document.getElementById('game').style.display = 'block';
+    document.getElementById('roomLabel').innerText = code;
+    document.getElementById('symbolLabel').innerText = mySymbol;
+
+    // Listen for updates
+    room.on((data) => {
+        if(!data) return;
+        board = JSON.parse(data.board || '["","","","","","","","",""]');
+        currentTurn = data.turn || 'X';
+        updateUI();
+        checkWinner();
+    });
+
+    // Reset game for new room
+    if(mySymbol === 'X') {
+        room.put({ board: JSON.stringify(Array(9).fill("")), turn: 'X' });
+    }
+}
+
+function cellClick(index) {
+    if(board[index] === "" && currentTurn === mySymbol) {
+        board[index] = mySymbol;
+        room.put({
+            board: JSON.stringify(board),
+            turn: mySymbol === 'X' ? 'O' : 'X'
+        });
+    }
+}
+
+function updateUI() {
+    const cells = document.querySelectorAll('.cell');
+    board.forEach((val, i) => {
+        cells[i].innerText = val;
+        cells[i].style.color = val === 'X' ? '#007bff' : '#28a745';
+    });
+    document.getElementById('status').innerText = (currentTurn === mySymbol) ? "Your Turn!" : "Opponent's Turn...";
+}
+
+function checkWinner() {
+    const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    for (let [a,b,c] of wins) {
+        if(board[a] && board[a] === board[b] && board[a] === board[c]) {
+            document.getElementById('status').innerText = `🎉 Player ${board[a]} Wins!`;
+            return true;
+        }
+    }
+    if(!board.includes("")) document.getElementById('status').innerText = "Draw! 🤝";
+}
+</script>
+
+</body>
+</html>
